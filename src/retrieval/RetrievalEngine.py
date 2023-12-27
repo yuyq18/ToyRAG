@@ -1,8 +1,8 @@
 from argparse import ArgumentParser
-# from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch
 import pandas as pd
 
-# es = Elasticsearch(hosts="http://localhost:9200")
+es = Elasticsearch(hosts="http://localhost:9200")
 
 class RetrievalEngine:
     @staticmethod

@@ -9,5 +9,7 @@ def main():
     test_retrieval_engine = RetrievalEngine(type="es")
     test_retrieval_engine.load_data()
 
+    test_retrieval_engine.build_index()
+
 if __name__ == '__main__':
     main()

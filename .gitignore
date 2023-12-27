@@ -21,7 +21,8 @@ dist/
 .DS_Store
 
 # Others
-data/
+*.csv
+ref/data/
 log/
 config/api-config.json
 test*
