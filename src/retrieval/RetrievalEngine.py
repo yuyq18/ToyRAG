@@ -1,8 +1,10 @@
 from argparse import ArgumentParser
 from elasticsearch import Elasticsearch
 import pandas as pd
+from tqdm import trange
 
-es = Elasticsearch(hosts="http://localhost:9200")
+# Elasticsearch
+es = Elasticsearch(hosts="http://localhost:9200", timeout=300)
 
 class RetrievalEngine:
     @staticmethod
@@ -20,18 +22,7 @@ class RetrievalEngine:
 
     def load_data(self):
         df = pd.read_csv(self.data_path)
-        print(df.head(5))
-        # for col in df.columns:
-        #     print(col, df[col].unique().shape[0])
-        for i in range(1):
-            print('Title', df.loc[i, 'Title'])
-            print("=====================")
-            print('Description', df.loc[i, 'Description'])
-            print("=====================")
-            print('Body', df.loc[i, 'Body'])
-            print("=====================")
-            print('Keywords', df.loc[i, 'Keywords'])
-            print("=====================")
+        print('index length: ', len(df))
         return df
 
     def build_index(self):
@@ -39,40 +30,56 @@ class RetrievalEngine:
         # create indices
         mapping = {
             'properties': {
+                'Title': {
+                    'type': 'text',
+                    'analyzer': 'standard',
+                    'search_analyzer': 'standard'
+                },
+                'Description': {
+                    'type': 'text',
+                    'analyzer': 'standard',
+                    'search_analyzer': 'standard'
+                },
                 'Body': {
                     'type': 'text',
-                    'analyzer': 'whitespace',
-                    'search_analyzer': 'whitespace'
-                }
+                    'analyzer': 'standard',
+                    'search_analyzer': 'standard'
+                },
+                # 'Keywords': {
+                #     'type': 'text',
+                #     'analyzer': 'standard',
+                #     'search_analyzer': 'standard'
+                # }
             }        
         }
-        if es.indices.exists(index="corpus"):
-            es.indices.delete(index="corpus")
-        es.indices.create(index="corpus", ignore=400)
-        es.indices.put_mapping(index='corpus', body=mapping)
+        if es.indices.exists(index="news"):
+            es.indices.delete(index="news")
+        es.indices.create(index="news", ignore=400)
+        es.indices.put_mapping(index='news', body=mapping)
 
         # build index
-        # for quote in quotes:
-        #     es.index(index='corpus', document=quote)
-        for i in range(len(df)):
+        # for i in range(len(df)):
+        for i in trange(50):
             doc = {
                 "Title": df.loc[i, 'Title'],
                 "Description": df.loc[i, 'Description'],
                 "Body": df.loc[i, 'Body'],
-                "Keywords": df.loc[i, 'Keywords'],
+                # "Keywords": df.loc[i, 'Keywords'],
             }
-            es.index(index='corpus', document=doc)
-        print("finish index")
+            res = es.index(index='news', document=doc, request_timeout=300)
+        print("Finish index")
 
     def query(self, query):
         query = {
             'match': {
-                'Body': query,
+                'Description': query,
             }
         }
-        result = es.search(index='corpus', query=query, size=10000)  # search
+        result = es.search(index='news', query=query, size=10000)  # search
+
+        print("==================")
         res_df = pd.json_normalize(result['hits']['hits'])  # 转为 dataframe
-        print(res_df.head())
+        print(res_df.columns)
         # pass
         return res_df
     
