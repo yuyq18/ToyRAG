@@ -1,17 +1,58 @@
+import os
+import sys
 from argparse import ArgumentParser
+from loguru import logger
+import pandas as pd
 from src.retrieval import *
+from src.llm import *
+from src.utils import *
+
+
+def parse_base_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument('--retrieval', type=str, default='ES', choices=['ES', 'Embed'], help='retrieval engine type')
+    parser.add_argument('--llm', type=str, default='GPT', choices=['GPT'], help='llm type')
+    parser.add_argument('--test_data', type=str, default='data/test.csv', help='Test data file')
+    parser.add_argument('--verbose', type=str, default='INFO', choices=['TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], help='Log level')
+    return parser
 
 def main():
-    init_parser = ArgumentParser()
-    # init_parser.add_argument('-m', '--mode', type=str, required=True, help='The main function to run')
-    init_args, init_extras = init_parser.parse_known_args()
+    parser = ArgumentParser()
+    parser = parse_base_args(parser)
+    args, extras = parser.parse_known_args()
 
-    # bulid index
-    test_retrieval_engine = RetrievalEngine(type="es")
-    test_retrieval_engine.build_index()
+    logger.remove()
+    logger.add(sys.stderr, level=args.verbose)
+    os.makedirs('logs', exist_ok=True)
+    # log name use the time when the program starts, level is INFO
+    logger.add('logs/{time:YYYY-MM-DD:HH:mm:ss}.log', level='DEBUG')
 
-    test_query = 'an explosion in Pennsylvania'
-    res_df = test_retrieval_engine.query(query=test_query)
-    print(res_df['_source.Description'])
+    # get retrieval model
+    try:
+        retrieval_model = eval(args.retrieval+'Model')()
+    except NameError:
+        logger.error('No such retrieval_model!')
+    # get llm model
+    try:
+        llm_model = eval(args.llm+'LLM')()
+    except NameError:
+        logger.error('No such LLM!')
+
+    # test
+    # df = pd.read_csv(args.test_data)
+    # for i in range(len(df)):
+    #     query = df.loc[i, 'query']
+    #     retrieval_docs = retrieval_model.query(query=query)
+    #     retrieval_res = format_docs(retrieval_docs)
+    #     llm_res = llm_model.step(question=query, retrieval_res=retrieval_res)
+    #     logger.success(llm_res)
+    
+
+    # retrieval_model.build_index()
+    test_query = 'Please describe the explosion happened in Pennsylvania in 2023.'
+    retrieval_docs = retrieval_model.query(query=test_query)
+    retrieval_res = format_docs(retrieval_docs)
+    # print(retrieval_res)
+    llm_res = llm_model.step(question=test_query, retrieval_res=retrieval_res)
+    logger.success(llm_res)
 if __name__ == '__main__':
     main()

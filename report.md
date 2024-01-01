@@ -1,15 +1,5 @@
-# ToyRAG
-THU-Advanced Machine Learning(Fall 2023) HW3: Retrieval-augmented generation (RAG)
-
-### TODO:
-
-1. LLM: ChatGPT-3.5-turbo (已完成)
-2. ES: build index and test toy data （已完成）
-3. bulid several test examples to test.csv
-4. reconsider the format of retrieval results as prompt
-5. effectiveness of the test query "Please describe the explosion happened in Pennsylvania in 2023."
-6. 基于Embeddings的方法？
-
+# AML HW3: a simple RAG framework
+> 庾源清 2023310756
 
 ## 实现细节
 
@@ -34,6 +24,7 @@ THU-Advanced Machine Learning(Fall 2023) HW3: Retrieval-augmented generation (RA
 ### Enhanced Method
 
 将检索到的结果作为“reference information”拼接进给LLM的输入中，例如 query + "Here is some reference information: " + retrieval_results
+
 
 ## 效果展示
 
