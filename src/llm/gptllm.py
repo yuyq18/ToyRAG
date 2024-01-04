@@ -34,10 +34,12 @@ class GPTLLM(BaseLLM):
     
     def step(self, question, retrieval_res):
         llm_input = question+"\nHere is some reference information:\n" + retrieval_res
-        # print("llm_input: ", llm_input)
+        if len(self.enc.encode(llm_input)) >= 3096:
+            llm_input = llm_input[:14000]
         logger.info(llm_input)
         logger.debug(f'LLM input length: {len(self.enc.encode(llm_input))}')
-        
-        llm_response = self.model(llm_input)
+
+        llm_response = self.model(question) # without reference information
+        llm_response_ref = self.model(llm_input) # with reference information
         logger.debug(f'LLM output length: {len(self.enc.encode(llm_response))}')
-        return format_text(llm_response)
+        return format_text(llm_response), format_text(llm_response_ref)

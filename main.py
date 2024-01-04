@@ -36,23 +36,20 @@ def main():
         llm_model = eval(args.llm+'LLM')()
     except NameError:
         logger.error('No such LLM!')
+    
+    # build index
+    # retrieval_model.build()
 
     # test
-    # df = pd.read_csv(args.test_data)
-    # for i in range(len(df)):
-    #     query = df.loc[i, 'query']
-    #     retrieval_docs = retrieval_model.query(query=query)
-    #     retrieval_res = format_docs(retrieval_docs)
-    #     llm_res = llm_model.step(question=query, retrieval_res=retrieval_res)
-    #     logger.success(llm_res)
+    df = pd.read_csv(args.test_data)
+    for i in range(len(df)):
+        query = df.loc[i, 'query']
+        retrieval_docs = retrieval_model.query(query=query)
+        retrieval_res = format_docs(retrieval_docs)
+        llm_response, llm_response_ref = llm_model.step(question=query, retrieval_res=retrieval_res)
+        logger.success(llm_response)
+        logger.success(llm_response_ref)
     
-
-    # retrieval_model.build_index()
-    test_query = 'Please describe the explosion happened in Pennsylvania in 2023.'
-    retrieval_docs = retrieval_model.query(query=test_query)
-    retrieval_res = format_docs(retrieval_docs)
-    # print(retrieval_res)
-    llm_res = llm_model.step(question=test_query, retrieval_res=retrieval_res)
-    logger.success(llm_res)
+    
 if __name__ == '__main__':
     main()

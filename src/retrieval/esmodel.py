@@ -5,9 +5,6 @@ from tqdm import trange
 from loguru import logger
 from .base import BaseModel
 
-# Elasticsearch
-# es = Elasticsearch(hosts="http://localhost:9200", timeout=300)
-
 class ESModel(BaseModel):
     @staticmethod
     def parse_retrieval_args(parser: ArgumentParser) -> ArgumentParser:
@@ -20,10 +17,6 @@ class ESModel(BaseModel):
         parser = ArgumentParser()
         parser = self.parse_retrieval_args(parser)
         args, extras = parser.parse_known_args()
-        # if api_config is not None and self.api_config is None:
-        #     with open(api_config, 'r') as f:
-        #         self.api_config = json.load(f)
-        #     openai.api_base = self.api_config['api_base']
 
         self.data_path = args.data_path
         self.dataset = args.dataset
@@ -51,11 +44,6 @@ class ESModel(BaseModel):
                     'type': 'text',
                     'analyzer': 'standard',
                     'search_analyzer': 'standard'
-                },
-                'Keywords': {
-                    'type': 'text',
-                    'analyzer': 'standard',
-                    'search_analyzer': 'standard'
                 }
             }        
         }
@@ -66,16 +54,20 @@ class ESModel(BaseModel):
 
         # build index
         df = pd.read_csv(self.data_path)
+        success = 0
         for i in range(len(df)):
             doc = {
                 "Title": df.loc[i, 'Title'],
                 "Description": df.loc[i, 'Description'],
-                "Body": df.loc[i, 'Body'],
-                "Keywords": df.loc[i, 'Keywords'],
+                "Body": df.loc[i, 'Body']
             }
-            res = es.index(index='news', document=doc, request_timeout=300)
-            print(res)
-        print("Finish index")
+            try:
+                es.index(index='news', document=doc, request_timeout=300)
+                success += 1
+            except Exception as e:
+                logger.error(e)
+                logger.debug(f"Document {i}: {doc}")
+        logger.success(f"Finish index for {success} documents.")
 
     def query(self, query):
         es = Elasticsearch(hosts="http://localhost:9200", timeout=300)
@@ -85,15 +77,14 @@ class ESModel(BaseModel):
         query = {
             "multi_match": {
                 "query": query,
-                "fields": ["Title", "Description", "Body", "Keywords"]
+                "fields": ["Title", "Description", "Body"]
             }
         }
         result = es.search(index='news', query=query, size=self.max_doc)  # search
         res_df = pd.json_normalize(result['hits']['hits'])  # 转为 dataframe
         res_df.rename(columns={'_source.Title': 'Title',
                             '_source.Description': 'Description',
-                            '_source.Body': 'Body',
-                            '_source.Keywords': 'Keywords'}, inplace=True)
+                            '_source.Body': 'Body'}, inplace=True)
         
-        return res_df[['Title', 'Description', 'Body', 'Keywords']]
+        return res_df[['Title', 'Description', 'Body']]
     
